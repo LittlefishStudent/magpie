@@ -267,6 +267,8 @@ func onMachine(home, cfg string) []*Agent {
 		cline(home),
 		qoder(home),
 		qoderCN(home),
+		trae(home),
+		traeCN(home),
 		grok(home),
 		grokApp(home),
 		zcode(home),

@@ -205,6 +205,9 @@ type agentJSON struct {
 	// whether it has magpie already; omitted when the app has no status reader
 	Import string `json:"import,omitempty"`
 	Added  *bool  `json:"added,omitempty"`
+	// Guide: the values an app whose models magpie can't write is given by
+	// hand in its own dialog (Trae), in the order it asks for them
+	Guide []agent.Guide `json:"guide,omitempty"`
 	// Launch: the command that starts an agent taking the gateway only
 	// from its environment (agy) on magpie, to copy
 	Launch string `json:"launch,omitempty"`
@@ -2702,6 +2705,9 @@ func state() stateJSON {
 					aj.Added = &added
 				}
 			}
+		}
+		if a.Guide != nil {
+			aj.Guide = a.Guide()
 		}
 		if a.Launch != nil {
 			aj.Launch = a.Launch()
