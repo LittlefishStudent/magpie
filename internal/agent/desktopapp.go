@@ -99,6 +99,14 @@ var desktopApps = map[string]desktopApp{
 		more: []desktopApp{{id: "com.minimax.agent", names: []string{"MiniMax Code.app"}}}},
 	"codebuddy": {id: "com.tencent.codebuddy", names: []string{"CodeBuddy.app"},
 		more: []desktopApp{{id: "com.tencent.codebuddycn", names: []string{"CodeBuddy CN.app"}}}},
+	// Trae (ByteDance's IDE, 3.6.13: Trae.app, com.trae.app) and Trae CN
+	// (3.4.13: Trae CN.app, cn.trae.app) keep their models on their own cloud
+	// and none magpie can write, so these find the app for a row that only
+	// shows what to type into it (trae.go). Their Windows and Linux installs
+	// aren't known here; there the userData folder both of them keep finds
+	// them, which each also opens the moment it runs.
+	"trae":    {id: "com.trae.app", names: []string{"Trae.app"}},
+	"trae-cn": {id: "cn.trae.app", names: []string{"Trae CN.app"}},
 }
 
 // appFolders are where apps are installed; a var so tests can point it

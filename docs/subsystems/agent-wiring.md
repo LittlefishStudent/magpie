@@ -318,3 +318,55 @@ Settings included, so the form, the saved row and gateway traffic have not
 been tried end to end. As with Cindy and Lody, the TUI leaves the row out
 because there is nothing to pick. `magpie aionui add` opens the link.
 
+
+## Trae and Trae CN: a guided row
+
+Trae, ByteDance's IDE, keeps no model list magpie can write. Its Add Model
+dialog posts to Trae's cloud (`api/ide/v1/add_custom_model`), and its
+`state.vscdb` holds only a cache of what the cloud answered; user
+`settings.json` carries no address or model, `chatLanguageModels.json` is a
+VS Code file Trae does not read, and `trae://` has no route that adds one
+(`#2907`, `#4365`). So neither row writes into Trae, and magpie's rule
+against borrowing an app's credentials for a private cloud API is what
+stops it: calling `add_custom_model` would mean reading Trae's session
+token out of its storage and sending magpie's key to the vendor.
+
+`internal/agent/trae.go`'s rows are guided instead: `Agent.Guide` returns
+the values Trae's own dialog is given, and the Agents page opens them, each
+with a copy button, in the order the dialog asks for them.
+
+```
+Endpoint   <gateway>/v1/chat/completions
+API key    <agentKeyAt("trae") | agentKeyAt("trae-cn")>
+Model      a model magpie lists for that row, when it lists one
+```
+
+The endpoint is the whole request, not a base: Trae's dialog appends
+`/chat/completions` to a base URL it is given and takes a full URL as typed.
+The model is one `provider.CatalogFor` lists for the row; with none listed
+the entry is a note, never a name, because the gateway answers a model it
+doesn't know with 404 and the row would read as wrong. The two builds are
+found by their userData folders (`~/Library/Application Support/Trae` and
+`Trae CN`, `%APPDATA%` on Windows, `~/.config` on Linux) or by their apps
+installed and not opened once yet (`com.trae.app`, `cn.trae.app`), and each
+answers by its own key on magpie.
+
+A guided row shows no switch and no picker, and `Agent.Added` stays nil:
+nothing can read whether the user pasted the values in, so the row never
+claims either way, and the JSON omits `added`. The row's line says it is
+added by hand and where Trae keeps its models.
+
+That a custom model's requests reach a loopback address, which `#4365`
+asked before any of this was built, is settled: a model added with
+`client_connect` true is fetched by Trae's own process on the user's
+machine. Its chat modules read the flag as
+`use_remote_service: !client_connect`, and its `CustomModelProxy` is a
+cloud-to-client executor — the cloud pushes a request down a tunnel the
+client opened and the client dials, so a private address is reachable where
+the cloud could not reach it. Trae CN's build carries the same modules and
+the same strings.
+
+```sh
+go test -tags nogui ./internal/agent -run '^TestTrae'
+node --test internal/gui/tests/trae-guide.test.cjs
+```
