@@ -542,8 +542,7 @@ function renderAgents() {
     if (extras.childNodes.length) fields.append(extras);
     // an app taking magpie by a link (Cindy): its row opens it
     if (a.import && mode !== "panel") fields.append(importButton(a));
-    // an app magpie can't write at all (Trae): its row opens what to type
-    // into the app's own dialog (traeGuide)
+    // an app magpie can't write at all (Trae): what to type in its own dialog
     if (a.guide && mode !== "panel") fields.append(guideButton(a));
     if (launchOnly && mode !== "panel") fields.append(launchSolo(a));
     // the panel shows what's set as words, and a row's controls only
@@ -1386,8 +1385,7 @@ function connectLine(a, kind) {
     else say(t("Not added · {agent} asks to add magpie when its link opens", { agent: a.name }));
     return line;
   }
-  // an app magpie can't write at all (Trae): added by hand, in its own
-  // dialog, and nothing here can read whether it was
+  // added by hand in its own dialog, and unreadable here
   if (kind === "guide") {
     say(t("Added by hand · {agent} keeps its models on the vendor's servers", { agent: a.name }));
     return line;
@@ -1608,7 +1606,7 @@ function connectRow(a, row, who, { fields, extras, fieldBtn, sw, kind }) {
     b.classList.add("ag-start");
     row.append(b, el("span", "ag-conn-gap"));
   } else if (kind === "guide") {
-    // the same shape, its own button: nothing to switch, added by hand
+    // the same shape, its own button: nothing to switch
     const b = guideButton(a);
     b.classList.add("ag-start");
     row.append(b, el("span", "ag-conn-gap"));
@@ -2865,8 +2863,7 @@ function importButton(a) {
 }
 
 // guideButton: the one control of an app magpie can't write at all, its
-// models on the vendor's own cloud (Trae): it opens what that app's Add
-// Model dialog is given. Nothing is written, so it never claims to be added.
+// models on the vendor's cloud: it opens what that app's Add Model asks.
 function guideButton(a) {
   const b = el("button", "field solo import");
   b.type = "button";
@@ -2877,8 +2874,7 @@ function guideButton(a) {
   return b;
 }
 
-// openGuide: those values, each with a copy button, in the order the app's
-// own dialog asks for them.
+// openGuide: those values, each copyable, in the order the app asks for them.
 function openGuide(a) {
   const ed = el("div", "editor guide-ask");
   const head = el("div", "ehead");
@@ -2899,6 +2895,10 @@ function openGuide(a) {
     row.append(el("div", "ag-k", t(g.label)), val);
     ed.append(row);
   }
+  // Trae sends X-Forwarded-For itself, which magpie answers as from
+  // another machine (#5073, #3439); the key above is the gateway's own
+  // token, so sharing alone answers 401.
+  ed.append(el("p", "ag-note", t("If {name} says the request came through a proxy or tunnel, make a key in Gateway → Gateway keys and use that, or start magpie with MAGPIE_TRUST_PROXY=1", { name: a.name })));
   const bar = el("div", "bar");
   const done = el("button", "text primary", t("Done"));
   done.onclick = closeModal;

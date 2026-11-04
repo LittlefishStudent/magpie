@@ -62,6 +62,15 @@ const STEP = {
   de: "Trae CN hält seine Modelle auf den eigenen Servern des Anbieters, magpie kann sie nicht schreiben. Öffnen Sie in Trae CN „Modell hinzufügen“, wählen Sie Custom (OpenAI Compatible) und fügen Sie dies ein:",
 };
 const NOTE = { en: "Any model id magpie lists", zh: "magpie 列表中任意模型的 id", "zh-TW": "magpie 列表中任意模型的 id", ja: "magpie が一覧するモデル id のいずれか", de: "Eine beliebige Modell-Kennung aus magpies Liste" };
+// what a Trae user meets when Trae's own X-Forwarded-For gets magpie's 403
+// (#5073, #3439): the dialog names the way out
+const CATCH = {
+  en: /Gateway keys.*MAGPIE_TRUST_PROXY=1/,
+  zh: /网关密钥.*MAGPIE_TRUST_PROXY=1/,
+  "zh-TW": /閘道金鑰.*MAGPIE_TRUST_PROXY=1/,
+  ja: /ゲートウェイキー.*MAGPIE_TRUST_PROXY=1/,
+  de: /Gateway-Schlüssel.*MAGPIE_TRUST_PROXY=1/,
+};
 
 for (const engine of (process.env.BROWSER ? [process.env.BROWSER] : ["chromium", "webkit"])) {
   for (const lang of Object.keys(SAID)) {
@@ -124,6 +133,10 @@ for (const engine of (process.env.BROWSER ? [process.env.BROWSER] : ["chromium",
       assert.equal(await kvs.nth(1).locator("code").innerText(), "magpie-trae-cn");
       assert.equal(await kvs.nth(2).locator("code").innerText(), "deepseek/deepseek-v4.1-flash");
       assert.equal(opened, null, "opening the guide writes to nothing");
+      // and the way out when Trae's own X-Forwarded-For is refused
+      const note = dialog.locator(".ag-note");
+      assert.equal(await note.count(), 1, "the 403 a Trae user meets is named");
+      assert.match(await note.innerText(), CATCH[lang]);
       // each value copies
       const copied = page.waitForRequest((r) => r.url().includes("/api/copy"));
       await kvs.nth(0).locator("button").click();
