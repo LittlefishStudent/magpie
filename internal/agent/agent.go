@@ -267,6 +267,11 @@ type Agent struct {
 	// status.
 	Import func() string
 	Added  func() (added, known bool)
+	// Guide, for an app whose models are held on the vendor's own cloud and
+	// can't be written by magpie at all (Trae), is what an app's own dialog
+	// is given by hand: the values to copy, in the order it asks for them.
+	// Such an agent has no fields, so nothing on its row claims to be set.
+	Guide func() []Guide
 	// Launch, for an agent that takes the gateway only from its
 	// environment (agy), is the command that starts it on magpie, while
 	// it is on one of magpie's models; "" otherwise.

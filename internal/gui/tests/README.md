@@ -2410,6 +2410,22 @@ magpie is added (green once it is), its button stands where the other rows'
 model picker does, as wide and lined up with it at 960 and 700px, and a click
 opens the app's link. English and Chinese, Chromium and WebKit.
 
+`trae-guide.test.cjs` checks the row of an app magpie can't write at all:
+Trae and Trae CN keep their models on the vendor's own cloud (#4365, #2907),
+so their one control opens what the app's own Add Model dialog is given
+instead of writing anything. It checks that the line under the name says
+added by hand and never that magpie is added, that there is no switch, that
+the button stands where the other rows' model picker does, as wide and lined
+up with it at 960 and 700px, and that it opens a dialog with the endpoint,
+the key and the model, each copied by its own button. A build with no model
+listed for it names none, saying any listed id will do. No request to the app
+is made, and at 420px nothing scrolls sideways. All five languages, Chromium
+and WebKit. The API is faked.
+
+```sh
+node --test internal/gui/tests/trae-guide.test.cjs
+```
+
 `omp-profile-connect.test.cjs` checks an omp named profile's switch (#1187):
 clicking **omp · work** posts `/api/agents/connect/omp%23work`, not a path the
 browser cuts at `#`. A query string on the same page (`/api/usage?period=today`)

@@ -542,18 +542,22 @@ function renderAgents() {
     if (extras.childNodes.length) fields.append(extras);
     // an app taking magpie by a link (Cindy): its row opens it
     if (a.import && mode !== "panel") fields.append(importButton(a));
+    // an app magpie can't write at all (Trae): what to type in its own dialog
+    if (a.guide && mode !== "panel") fields.append(guideButton(a));
     if (launchOnly && mode !== "panel") fields.append(launchSolo(a));
     // the panel shows what's set as words, and a row's controls only
     // once it's opened: one row at a time, in place
     let sum = null, openBox = null;
     const effortOf = (f) => f.key === "effort" || f.label === "effort" || f.label === "thinking";
-    if (mode === "panel" && (a.import || launchOnly)) {
+    if (mode === "panel" && (a.import || a.guide || launchOnly)) {
       // in words like the rest, the row itself the link (or the command)
-      const act = a.import ? importButton(a) : launchSolo(a);
+      const act = a.import ? importButton(a) : a.guide ? guideButton(a) : launchSolo(a);
       sum = el("span", "ag-sum");
-      sum.append(a.import ? el("span", "v" + (a.added ? "" : " empty"), a.added ? "magpie" : t("Add magpie")) : el("span", "v empty", t("Copy launch command")), el("span"));
+      const said = a.import ? el("span", "v" + (a.added ? "" : " empty"), a.added ? "magpie" : t("Add magpie"))
+        : a.guide ? el("span", "v", t("Add by hand")) : el("span", "v empty", t("Copy launch command"));
+      sum.append(said, el("span"));
       const c = el("span", "chev");
-      c.append(a.import ? svg(OUT, 10, 1.6) : svg(LAUNCH_GLYPH, 10, 1.5));
+      c.append(a.import ? svg(OUT, 10, 1.6) : a.guide ? svg(CHEV_R, 10, 1.6) : svg(LAUNCH_GLYPH, 10, 1.5));
       sum.append(c);
       row.title = act.title;
       row.onclick = (ev) => {
@@ -1309,6 +1313,7 @@ const anyMagpieModels = () => state.agents.some((a) => connectField(a)?.options.
 function connectKind(a) {
   if (a.cliMissing) return "no";
   if (a.import) return "link";
+  if (a.guide) return "guide";
   if (connectable(a)) return "ok";
   if (NATIVE_ONLY[kindOf(a)]) return "no";
   if (a.fields.length && !anyMagpieModels()) return "empty";
@@ -1378,6 +1383,11 @@ function connectLine(a, kind) {
     if (a.added == null) say(t("Opens {name} to add magpie as a provider — confirm it there", { name: a.name }));
     else if (a.added) say(t("Added · magpie is a provider in {agent}", { agent: a.name }), "on");
     else say(t("Not added · {agent} asks to add magpie when its link opens", { agent: a.name }));
+    return line;
+  }
+  // added by hand in its own dialog, and unreadable here
+  if (kind === "guide") {
+    say(t("Added by hand · {agent} keeps its models on the vendor's servers", { agent: a.name }));
     return line;
   }
   if (kind === "empty" && !switchable(a)) { say(t("Add a key or a subscription first; then there are models to connect")); return line; }
@@ -1593,6 +1603,11 @@ function connectRow(a, row, who, { fields, extras, fieldBtn, sw, kind }) {
     // switch's room kept, so the button lines up with the pickers (the
     // owner: the old row's wide button sat apart from every other)
     const b = importButton(a);
+    b.classList.add("ag-start");
+    row.append(b, el("span", "ag-conn-gap"));
+  } else if (kind === "guide") {
+    // the same shape, its own button: nothing to switch
+    const b = guideButton(a);
     b.classList.add("ag-start");
     row.append(b, el("span", "ag-conn-gap"));
   } else row.append(el("span", "ag-cant", t("Can't connect")));
@@ -2827,7 +2842,7 @@ const onMagpie = (a) => !!(a.added || a.wired || a.drift);
 // has nothing set to tell by, and stays up while it is there
 // one whose CLI is gone has nothing to set, and stays up only while
 // it is connected, to be disconnected
-const agentUsed = (a) => a.cliMissing ? onMagpie(a) : onMagpie(a) || (!connectable(a) && a.fields.some((f) => f.value && !tweak(f))) || (!!a.launch && !a.fields.length && !a.import);
+const agentUsed = (a) => a.cliMissing ? onMagpie(a) : onMagpie(a) || (!connectable(a) && a.fields.some((f) => f.value && !tweak(f))) || (!!a.launch && !a.fields.length && !a.import) || !!a.guide;
 
 // importButton: the one control of an app magpie is added to by its import
 // link: magpie, once the app has it, or an offer to add it
@@ -2846,6 +2861,52 @@ function importButton(a) {
   };
   return b;
 }
+
+// guideButton: the one control of an app magpie can't write at all, its
+// models on the vendor's cloud: it opens what that app's Add Model asks.
+function guideButton(a) {
+  const b = el("button", "field solo import");
+  b.type = "button";
+  b.title = t("Opens what {name}'s Add Model dialog is given, to paste in there", { name: a.name });
+  b.append(icon(a.icon), el("span", "v", t("Add by hand")));
+  b.append(el("span", "chev", svg(CHEV_R, 11, 1.6)));
+  b.onclick = (ev) => { ev.stopPropagation(); openGuide(a); };
+  return b;
+}
+
+// openGuide: those values, each copyable, in the order the app asks for them.
+function openGuide(a) {
+  const ed = el("div", "editor guide-ask");
+  const head = el("div", "ehead");
+  head.append(icon(a.icon), el("b", "", t("Add magpie to {name}", { name: a.name })));
+  ed.append(head);
+  ed.append(el("p", "lib-confirm", t("{name} keeps its models on its own servers, so magpie can't write them. In {name}, open Add Model, pick Custom (OpenAI Compatible), and paste these:", { name: a.name })));
+  for (const g of a.guide || []) {
+    const row = el("div", "ag-kv");
+    const val = el("div", "ag-v");
+    if (g.value) {
+      const l = el("div", "ag-vl");
+      const cp = el("button", "ag-quiet", t("Copy"));
+      cp.type = "button";
+      cp.onclick = () => copy(g.value, t(g.label), cp);
+      l.append(el("code", "ag-code", g.value), cp);
+      val.append(l);
+    } else val.append(el("span", "ag-hint", t(g.note)));
+    row.append(el("div", "ag-k", t(g.label)), val);
+    ed.append(row);
+  }
+  // Trae sends X-Forwarded-For itself, which magpie answers as from
+  // another machine (#5073, #3439); the key above is the gateway's own
+  // token, so sharing alone answers 401.
+  ed.append(el("p", "ag-note", t("If {name} says the request came through a proxy or tunnel, make a key in Gateway → Gateway keys and use that, or start magpie with MAGPIE_TRUST_PROXY=1", { name: a.name })));
+  const bar = el("div", "bar");
+  const done = el("button", "text primary", t("Done"));
+  done.onclick = closeModal;
+  bar.append(el("span", "grow"), done);
+  ed.append(bar);
+  openModal(ed);
+}
+
 // unhid: the agents whose hiding unhideCleared dropped here. A state answered
 // while that was being saved (a pick's, which is read once the agent's files
 // are written) can still name them hidden; they stay shown unless hidden by
